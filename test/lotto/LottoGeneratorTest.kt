@@ -8,30 +8,28 @@ import kotlin.test.assertFailsWith
 internal class LottoGeneratorsKtTest {
     @Test
     fun `generate lotto when using LottoGenerator with custom settings`() {
-        val lottoGenerator = LottoGenerator(min = 3, max = 5, size = 2)
-        val checker: LinkedHashSet<Int> = LinkedHashSet()
-        for (i in 0..300) {
-            val generated = lottoGenerator.generateLotto()
-            checker.addAll(generated)
-            assertEquals(2, generated.size)
-        }
-        assertEquals(3, checker.size)
-        assert(checker.contains(3))
-        assert(checker.contains(4))
-        assert(checker.contains(5))
+        val lottoGenerator = LottoGenerator(min = 4, max = 5, size = 2)
+        val generated = lottoGenerator.generateLotto()
+        assertEquals(2, generated.size)
+        assertEquals(4, generated[0])
+        assertEquals(5, generated[1])
     }
 
     @Test
     fun `generate lotto when using LottoGenerator with default settings`() {
-        // default min = 1, max = 45, size = 6
+        val lottoGenerator = LottoGenerator()
+        val generated = lottoGenerator.generateLotto()
+        assert(generated.size == lottoGenerator.size)
+        assert(generated.minOf { it } >= lottoGenerator.min)
+        assert(generated.maxOf { it } <= lottoGenerator.max)
+    }
+
+    @Test
+    fun `generate lotto when using LottoGenerator with default settings and selected number`() {
         val lottoGenerator = LottoGenerator()
         val generated = lottoGenerator.generateLotto(listOf(8))
-        assert(generated.size == 6)
+        assert(generated.size == lottoGenerator.size)
         assert(generated.contains(8))
-        for (number in generated) {
-            assert(number >= 1)
-            assert(number <= 45)
-        }
     }
 
     @Test

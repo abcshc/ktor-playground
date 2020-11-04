@@ -5,7 +5,7 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
 
-internal class LottoGeneratorsKtTest {
+internal class LottoGeneratorsTest {
     @Test
     fun `generate lotto when using LottoGenerator with custom settings`() {
         val lottoGenerator = LottoGenerator(min = 4, max = 5, size = 2)

@@ -1,6 +1,6 @@
 package com.example
 
-import com.example.lotto.LottoGenerator
+import com.example.lotto.lotto
 import freemarker.cache.ClassTemplateLoader
 import io.ktor.application.*
 import io.ktor.freemarker.*
@@ -14,20 +14,11 @@ fun Application.module() {
         templateLoader = ClassTemplateLoader(this::class.java.classLoader, "templates")
     }
 
-    val lottoGenerator = LottoGenerator()
-
     routing {
+        this.lotto()
+
         get("/") {
             call.respond(FreeMarkerContent("index.ftl", null))
-        }
-
-        get("/lotto") {
-            call.respond(
-                    FreeMarkerContent(
-                            "lotto/lotto.ftl",
-                            mapOf("generated" to lottoGenerator.generateLotto())
-                    )
-            )
         }
     }
 }

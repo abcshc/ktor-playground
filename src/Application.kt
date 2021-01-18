@@ -2,20 +2,18 @@ package com.example
 
 import com.example.lotto.LottoGenerator
 import com.example.user.Users
-import com.example.web.PostUser
+import com.example.web.*
 import freemarker.cache.ClassTemplateLoader
 import io.ktor.application.*
 import io.ktor.features.*
 import io.ktor.freemarker.*
+import io.ktor.http.*
 import io.ktor.jackson.*
 import io.ktor.request.*
 import io.ktor.response.*
 import io.ktor.routing.*
 import org.h2.tools.Server
-import org.jetbrains.exposed.sql.Database
-import org.jetbrains.exposed.sql.SchemaUtils
-import org.jetbrains.exposed.sql.insert
-import org.jetbrains.exposed.sql.selectAll
+import org.jetbrains.exposed.sql.*
 import org.jetbrains.exposed.sql.transactions.transaction
 import java.io.File
 
@@ -27,6 +25,11 @@ fun Application.module() {
     }
     install(ContentNegotiation) {
         jackson()
+    }
+    install(StatusPages) {
+        exception<Throwable> {
+            call.respond(HttpStatusCode.InternalServerError)
+        }
     }
 
     Server.createTcpServer(
@@ -56,33 +59,53 @@ fun Application.module() {
         }
 
         post("/users") {
-            val content = call.receive<PostUser>()
-            var id: Int? = null
-            transaction {
-                id = Users.insert {
-                    it[name] = content.name
-                    it[gender] = content.gender.toString()
-                    it[phone] = content.phone
+            val request = call.receive<PostUsersRequest>()
+            val id: Int = transaction {
+                Users.insert {
+                    it[name] = request.name
+                    it[gender] = request.gender.toString()
+                    it[phone] = request.phone
                 }[Users.id].value
             }
-
-            call.respond(object {
-                val userId = id
-            })
+            call.respond(HttpStatusCode.Created, PostUsersResponse(id))
         }
 
         get("/users") {
-            var temp: Any? = null
-            transaction {
-                temp = Users.selectAll().map {
-                    object {
-                        val name: String = it[Users.name]
-                        val gender: String = it[Users.gender]
-                        val phone: String = it[Users.phone]
-                    }
+            val result: List<GetUserResponse> = transaction {
+                Users.selectAll().map {
+                    GetUserResponse(it[Users.id].value, it[Users.name], it[Users.gender], it[Users.phone])
                 }
             }
-            call.respond(temp as Any)
+            call.respond(GetUsersResponse(result))
+        }
+
+        put("/users") {
+            val request = call.receive<PutUsersRequest>()
+            val result = transaction {
+                Users.update({ Users.id eq request.id }) {
+                    it[name] = request.name
+                    it[gender] = request.gender.toString()
+                    it[phone] = request.phone
+                }
+            }
+            if (result == 0) {
+                call.respond(HttpStatusCode.NotFound, ErrorResponse("존재하지 않는 회원입니다."))
+            } else {
+                call.respond(HttpStatusCode.NoContent)
+            }
+
+        }
+
+        delete("/users") {
+            val request = call.receive<DeleteUsersRequest>()
+            val result = transaction {
+                Users.deleteWhere { Users.id eq request.id }
+            }
+            if (result == 0) {
+                call.respond(HttpStatusCode.NotFound, ErrorResponse("존재하지 않는 회원입니다."))
+            } else {
+                call.respond(HttpStatusCode.NoContent)
+            }
         }
 
         get("/") {
